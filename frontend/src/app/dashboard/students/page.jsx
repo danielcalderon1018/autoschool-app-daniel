@@ -76,9 +76,15 @@ export default function StudentsPage() {
   };
 
   const handlePictureSuccess = (updated) => {
-    // TODO(actividad): actualizar el estado local para reflejar la nueva foto
-    // Pista: reemplaza el estudiante actualizado dentro de `students` usando su id.
-    console.log("TODO: actualizar listado con estudiante modificado", updated);
+    setStudents((current) =>
+      current.map((existing) =>
+        existing.id === updated.id ? { ...existing, ...updated } : existing
+      )
+    );
+    setUploadStudent((current) =>
+      current?.id === updated.id ? { ...current, ...updated } : current
+    );
+    setSuccess('Foto de perfil actualizada correctamente.');
   };
 
   const getProfilePictureUrl = (profilePicture) => {

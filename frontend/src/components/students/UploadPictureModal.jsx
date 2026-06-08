@@ -88,9 +88,20 @@ export function UploadPictureModal({ student, onClose, onSuccess }) {
     }
   };
 
+  const validateFile = (file) => {
+    const allowedTypes = ['image/jpeg', 'image/png'];
+    const maxSize = 2 * 1024 * 1024;
+
+    if (!allowedTypes.includes(file.type)) {
+      return 'Solo se permiten archivos JPEG o PNG.';
+    }
+    if (file.size > maxSize) {
+      return 'El archivo debe ser menor a 2 MB.';
+    }
+    return null;
+  };
+
   const capturePhoto = () => {
-    // TODO(actividad): Completar captura desde webcam y convertir canvas -> File.
-    // Pista: usa canvas.toBlob y crea un File para reutilizar el mismo flujo de subida.
     if (!videoRef.current) return;
     const video = videoRef.current;
     if (!video.videoWidth || !video.videoHeight) return;
@@ -103,14 +114,24 @@ export function UploadPictureModal({ student, onClose, onSuccess }) {
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     canvas.toBlob((blob) => {
-      if (!blob) return;
+      if (!blob) {
+        setUploadError("No se pudo capturar la imagen de la cámara.");
+        return;
+      }
 
-      // TODO(actividad): construir el archivo capturado y actualizar estados.
-      // const file = new File([blob], "camera-capture.jpg", { type: "image/jpeg" });
-      // setUploadFile(file);
-      // setUploadPreview(URL.createObjectURL(file));
+      const file = new File([blob], `camera-capture-${student?.id || 'photo'}.jpg`, {
+        type: 'image/jpeg',
+      });
+      const validationError = validateFile(file);
+      if (validationError) {
+        setUploadError(validationError);
+        stopCamera();
+        return;
+      }
 
-      setUploadError("TODO: completar guardado de captura desde webcam.");
+      setUploadFile(file);
+      setUploadPreview(URL.createObjectURL(file));
+      setUploadError("");
       stopCamera();
     }, "image/jpeg", 0.9);
   };
@@ -124,27 +145,34 @@ export function UploadPictureModal({ student, onClose, onSuccess }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    // TODO(actividad): agregar validaciones basicas (tipo y tamano maximo).
-    // Ejemplos sugeridos: image/jpeg, image/png y un limite de 2MB.
+    const validationError = validateFile(file);
+    if (validationError) {
+      setUploadError(validationError);
+      setUploadFile(null);
+      setUploadPreview(null);
+      return;
+    }
 
+    setUploadError("");
     setUploadFile(file);
     setUploadPreview(URL.createObjectURL(file));
   };
 
   const handleSubmit = async () => {
-    if (!uploadFile) return;
+    if (!uploadFile) {
+      setUploadError('Selecciona una imagen antes de guardar.');
+      return;
+    }
+
     try {
       setIsUploading(true);
       setUploadError("");
-
-      // TODO(actividad): mejorar manejo de estado y errores durante el submit.
-      // Debe consumir studentsService.uploadPicture y cerrar modal en exito.
       const updated = await studentsService.uploadPicture(student.id, uploadFile);
       onSuccess(updated);
       handleClose();
     } catch (err) {
       setUploadError(
-        err?.message || "Error al subir la imagen. Completa la implementacion pendiente."
+        err?.response?.data?.detail || err?.message || 'Error al subir la imagen.'
       );
     } finally {
       setIsUploading(false);

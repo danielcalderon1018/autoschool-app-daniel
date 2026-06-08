@@ -39,10 +39,18 @@ class Vehicle(models.Model):
         return f"{self.plate} - {self.brand} {self.model}"
 
 class Course(models.Model):
+    LEVEL_CHOICES = (
+        ('basic', 'Basic'),
+        ('intermediate', 'Intermediate'),
+        ('advanced', 'Advanced'),
+    )
+
     name = models.CharField(max_length=150)
     description = models.TextField(blank=True)
     duration_hours = models.PositiveIntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    level = models.CharField(max_length=20, choices=LEVEL_CHOICES, default='basic')
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
